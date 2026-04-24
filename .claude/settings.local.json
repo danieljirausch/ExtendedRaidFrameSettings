@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:warcraft.wiki.gg)",
+      "WebFetch(domain:www.curseforge.com)",
+      "WebFetch(domain:wowpedia.fandom.com)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/LayoutFrame.lua\")",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_CompactRaidFrames/Blizzard_CompactRaidFrameContainer.xml\")"
+    ]
+  }
+}
