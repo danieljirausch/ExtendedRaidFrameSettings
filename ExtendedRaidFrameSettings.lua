@@ -30,6 +30,22 @@ local function InitializeSavedVariables()
     end
 end
 
+local function UpdateClampInsets()
+    if InCombatLockdown() then
+        ERFS.refreshQueued = true
+        return
+    end
+
+    local container = CompactRaidFrameContainer
+    local width = container:GetWidth()
+
+    if ExtendedRaidFrameSettings_DB.growth == "left" then
+        container:SetClampRectInsets(width - 200, 0, 10, 0)
+    else
+        container:SetClampRectInsets(0, 200 - width, 10, 0)
+    end
+end
+
 local function MirrorFrameX(frame, containerWidth)
     local numPoints = frame:GetNumPoints()
     if numPoints == 0 then return end
@@ -43,6 +59,7 @@ local function MirrorFrameX(frame, containerWidth)
 end
 
 local function ApplyRaidMirror()
+    UpdateClampInsets()
     if ExtendedRaidFrameSettings_DB.growth == "right" then return end
     if InCombatLockdown() then
         ERFS.refreshQueued = true
@@ -189,6 +206,7 @@ eventFrame:SetScript("OnEvent", function(self, event)
         self:UnregisterEvent(event)
 
         InitializeSavedVariables()
+        UpdateClampInsets()
         InitializeDropdown()
 
         hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", OnEditModeSelectionChanged)
