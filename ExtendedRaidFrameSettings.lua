@@ -2,8 +2,9 @@ local addonName, ns = ...
 local LibUIDropDownMenu = LibStub("LibUIDropDownMenu-4.0")
 
 local ERFS = {
-    isReversing = false,
     refreshQueued = false,
+    raidLayoutPending = false,
+    partyLayoutPending = false,
 }
 
 local DEFAULTS = {
@@ -40,11 +41,12 @@ local function MirrorFrameX(frame, containerWidth)
     frame:SetPoint(point, relativeTo, relativePoint, newX, yOfs)
 end
 
-local function ReverseRaidLayout()
-    if ERFS.isReversing then return end
+local function ApplyRaidMirror()
     if ExtendedRaidFrameSettings_DB.growth == "right" then return end
-
-    ERFS.isReversing = true
+    if InCombatLockdown() then
+        ERFS.refreshQueued = true
+        return
+    end
 
     local container = CompactRaidFrameContainer
     local W = container:GetWidth()
@@ -55,15 +57,14 @@ local function ReverseRaidLayout()
             MirrorFrameX(frame, W)
         end
     end
-
-    ERFS.isReversing = false
 end
 
-local function ReversePartyLayout()
-    if ERFS.isReversing then return end
+local function ApplyPartyMirror()
     if ExtendedRaidFrameSettings_DB.growth == "right" then return end
-
-    ERFS.isReversing = true
+    if InCombatLockdown() then
+        ERFS.refreshQueued = true
+        return
+    end
 
     local container = PartyFrame
     local W = container:GetWidth()
@@ -73,13 +74,33 @@ local function ReversePartyLayout()
             MirrorFrameX(memberFrame, W)
         end
     end
+end
 
-    ERFS.isReversing = false
+local function ReverseRaidLayout()
+    if ERFS.raidLayoutPending then return end
+    ERFS.raidLayoutPending = true
+    C_Timer.After(0, function()
+        if not ERFS.raidLayoutPending then return end
+        ERFS.raidLayoutPending = false
+        ApplyRaidMirror()
+    end)
+end
+
+local function ReversePartyLayout()
+    if ERFS.partyLayoutPending then return end
+    ERFS.partyLayoutPending = true
+    C_Timer.After(0, function()
+        if not ERFS.partyLayoutPending then return end
+        ERFS.partyLayoutPending = false
+        ApplyPartyMirror()
+    end)
 end
 
 local function ReverseAllLayouts()
-    ReverseRaidLayout()
-    ReversePartyLayout()
+    ERFS.raidLayoutPending = false
+    ERFS.partyLayoutPending = false
+    ApplyRaidMirror()
+    ApplyPartyMirror()
 end
 
 local function OnGrowthSelected(_, value)
