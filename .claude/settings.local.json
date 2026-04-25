@@ -7,7 +7,8 @@
       "WebFetch(domain:www.curseforge.com)",
       "WebFetch(domain:wowpedia.fandom.com)",
       "Bash(curl -sL \"https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_SharedXML/LayoutFrame.lua\")",
-      "Bash(curl -sL \"https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_CompactRaidFrames/Blizzard_CompactRaidFrameContainer.xml\")"
+      "Bash(curl -sL \"https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/AddOns/Blizzard_CompactRaidFrames/Blizzard_CompactRaidFrameContainer.xml\")",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

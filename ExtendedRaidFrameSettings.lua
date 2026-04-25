@@ -148,13 +148,17 @@ local function OnCombatEnd()
     end
 end
 
-local function DisableTopLeftAnchorLock()
-    for _, container in ipairs({ CompactRaidFrameContainer, PartyFrame }) do
-        if container.alwaysUseTopLeftAnchor ~= nil then
-            container.alwaysUseTopLeftAnchor = false
-        end
+EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
+    if CompactRaidFrameContainer.alwaysUseTopLeftAnchor ~= nil then
+        CompactRaidFrameContainer.alwaysUseTopLeftAnchor = false
     end
-end
+end)
+
+EventUtil.ContinueOnAddOnLoaded("Blizzard_UnitFrame", function()
+    if PartyFrame.alwaysUseTopLeftAnchor ~= nil then
+        PartyFrame.alwaysUseTopLeftAnchor = false
+    end
+end)
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
@@ -163,7 +167,6 @@ eventFrame:SetScript("OnEvent", function(self, event)
         self:UnregisterEvent(event)
 
         InitializeSavedVariables()
-        DisableTopLeftAnchorLock()
         InitializeDropdown()
 
         hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", OnEditModeSelectionChanged)
