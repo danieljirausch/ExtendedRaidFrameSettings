@@ -31,14 +31,15 @@ local function InitializeSavedVariables()
 end
 
 local function MirrorFrameX(frame, containerWidth)
-    local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(1)
-    if not point then return end
+    local numPoints = frame:GetNumPoints()
+    if numPoints == 0 then return end
 
-    local w = frame:GetWidth()
-    local newX = containerWidth - xOfs - w
-
-    frame:ClearAllPoints()
-    frame:SetPoint(point, relativeTo, relativePoint, newX, yOfs)
+    for i = numPoints, 1, -1 do
+        local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(i)
+        local w = frame:GetWidth()
+        local newX = containerWidth - xOfs - w
+        frame:SetPoint(point, relativeTo, relativePoint, newX, yOfs)
+    end
 end
 
 local function ApplyRaidMirror()
