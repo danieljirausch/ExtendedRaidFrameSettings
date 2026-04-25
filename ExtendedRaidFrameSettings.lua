@@ -29,17 +29,6 @@ local function InitializeSavedVariables()
     end
 end
 
-local function CheckCombatLockdown()
-    if InCombatLockdown() then
-        if not ERFS.refreshQueued then
-            print("ExtendedRaidFrameSettings: Your settings will be applied when you leave combat.")
-            ERFS.refreshQueued = true
-        end
-        return true
-    end
-    return false
-end
-
 local function MirrorFrameX(frame, containerWidth)
     local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(1)
     if not point then return end
@@ -54,7 +43,6 @@ end
 local function ReverseRaidLayout()
     if ERFS.isReversing then return end
     if ExtendedRaidFrameSettings_DB.growth == "right" then return end
-    if CheckCombatLockdown() then return end
 
     ERFS.isReversing = true
 
@@ -74,7 +62,6 @@ end
 local function ReversePartyLayout()
     if ERFS.isReversing then return end
     if ExtendedRaidFrameSettings_DB.growth == "right" then return end
-    if CheckCombatLockdown() then return end
 
     ERFS.isReversing = true
 
@@ -103,6 +90,11 @@ local function OnGrowthSelected(_, value)
         ExtendedRaidFrameSettingsDialog.Settings.GrowthDropdown.Dropdown,
         GROWTH_LABELS[value]
     )
+
+    if InCombatLockdown() then
+        ERFS.refreshQueued = true
+        return
+    end
 
     ReverseAllLayouts()
 end
