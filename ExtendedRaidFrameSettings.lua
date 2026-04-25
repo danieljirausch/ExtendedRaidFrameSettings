@@ -2,7 +2,6 @@ local addonName, ns = ...
 local LibUIDropDownMenu = LibStub("LibUIDropDownMenu-4.0")
 
 local ERFS = {
-    initialized = false,
     isReversing = false,
     refreshQueued = false,
 }
@@ -91,6 +90,11 @@ local function ReversePartyLayout()
     ERFS.isReversing = false
 end
 
+local function ReverseAllLayouts()
+    ReverseRaidLayout()
+    ReversePartyLayout()
+end
+
 local function OnGrowthSelected(_, value)
     if value == ExtendedRaidFrameSettings_DB.growth then return end
 
@@ -100,8 +104,7 @@ local function OnGrowthSelected(_, value)
         GROWTH_LABELS[value]
     )
 
-    ReverseRaidLayout()
-    ReversePartyLayout()
+    ReverseAllLayouts()
 end
 
 local function BuildGrowthDropdown()
@@ -149,44 +152,34 @@ end
 local function OnCombatEnd()
     if ERFS.refreshQueued and not InCombatLockdown() then
         ERFS.refreshQueued = false
-        ReverseRaidLayout()
-        ReversePartyLayout()
+        ReverseAllLayouts()
     end
 end
 
 local function DisableTopLeftAnchorLock()
-    if CompactRaidFrameContainer.alwaysUseTopLeftAnchor ~= nil then
-        CompactRaidFrameContainer.alwaysUseTopLeftAnchor = false
-    end
-    if PartyFrame.alwaysUseTopLeftAnchor ~= nil then
-        PartyFrame.alwaysUseTopLeftAnchor = false
-    end
-end
-
-local function Initialize()
-    if ERFS.initialized then return end
-    ERFS.initialized = true
-
-    InitializeSavedVariables()
-    DisableTopLeftAnchorLock()
-    InitializeDropdown()
-
-    hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", OnEditModeSelectionChanged)
-    hooksecurefunc(CompactRaidFrameContainer, "Layout", function() ReverseRaidLayout() end)
-    hooksecurefunc(PartyFrame, "Layout", function() ReversePartyLayout() end)
-
-    local combatFrame = CreateFrame("Frame")
-    combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    combatFrame:SetScript("OnEvent", function(_, event)
-        if event == "PLAYER_REGEN_ENABLED" then
-            OnCombatEnd()
+    for _, container in ipairs({ CompactRaidFrameContainer, PartyFrame }) do
+        if container.alwaysUseTopLeftAnchor ~= nil then
+            container.alwaysUseTopLeftAnchor = false
         end
-    end)
+    end
 end
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:SetScript("OnEvent", function(self, event)
-    self:UnregisterEvent(event)
-    Initialize()
+    if event == "PLAYER_ENTERING_WORLD" then
+        self:UnregisterEvent(event)
+
+        InitializeSavedVariables()
+        DisableTopLeftAnchorLock()
+        InitializeDropdown()
+
+        hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", OnEditModeSelectionChanged)
+        hooksecurefunc(CompactRaidFrameContainer, "Layout", ReverseRaidLayout)
+        hooksecurefunc(PartyFrame, "Layout", ReversePartyLayout)
+
+        self:RegisterEvent("PLAYER_REGEN_ENABLED")
+    else
+        OnCombatEnd()
+    end
 end)
