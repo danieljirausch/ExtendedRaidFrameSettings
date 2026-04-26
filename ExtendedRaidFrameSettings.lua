@@ -2,7 +2,6 @@ local addonName, ns = ...
 local LibUIDropDownMenu = LibStub("LibUIDropDownMenu-4.0")
 
 local ERFS = {
-    refreshQueued = false,
     raidLayoutPending = false,
     partyLayoutPending = false,
 }
@@ -35,11 +34,6 @@ local function InitializeSavedVariables()
 end
 
 local function UpdateClampInsets(growth)
-    if InCombatLockdown() then
-        ERFS.refreshQueued = true
-        return
-    end
-
     local container = CompactRaidFrameContainer
     local width = container:GetWidth()
 
@@ -66,10 +60,6 @@ end
 -- called after Layout() has reset frames to natural positions
 local function ApplyRaidGrowth(growth)
     UpdateClampInsets(growth)
-    if InCombatLockdown() then
-        ERFS.refreshQueued = true
-        return
-    end
     if growth ~= "left" then return end
 
     local container = CompactRaidFrameContainer
@@ -85,10 +75,6 @@ end
 
 -- called after Layout() has reset frames to natural positions
 local function ApplyPartyGrowth(growth)
-    if InCombatLockdown() then
-        ERFS.refreshQueued = true
-        return
-    end
     if growth ~= "left" then return end
 
     local container = PartyFrame
@@ -107,6 +93,7 @@ local function OnRaidLayout()
     C_Timer.After(0, function()
         if not ERFS.raidLayoutPending then return end
         ERFS.raidLayoutPending = false
+        if InCombatLockdown() then return end
         ApplyRaidGrowth(DB.growth)
     end)
 end
@@ -117,6 +104,7 @@ local function OnPartyLayout()
     C_Timer.After(0, function()
         if not ERFS.partyLayoutPending then return end
         ERFS.partyLayoutPending = false
+        if InCombatLockdown() then return end
         ApplyPartyGrowth(DB.growth)
     end)
 end
@@ -130,10 +118,7 @@ local function OnGrowthSelected(_, value)
         GROWTH_LABELS[value]
     )
 
-    if InCombatLockdown() then
-        ERFS.refreshQueued = true
-        return
-    end
+    if InCombatLockdown() then return end
 
     CompactRaidFrameContainer:Layout()
     PartyFrame:Layout()
@@ -182,11 +167,8 @@ local function OnEditModeSelectionChanged(self)
 end
 
 local function OnCombatEnd()
-    if ERFS.refreshQueued and not InCombatLockdown() then
-        ERFS.refreshQueued = false
-        CompactRaidFrameContainer:Layout()
-        PartyFrame:Layout()
-    end
+    CompactRaidFrameContainer:Layout()
+    PartyFrame:Layout()
 end
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
