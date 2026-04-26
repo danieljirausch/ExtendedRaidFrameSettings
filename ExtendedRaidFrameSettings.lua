@@ -19,6 +19,9 @@ local GROWTH_LABELS = {
     left = "Left",
 }
 
+-- aliased after InitializeSavedVariables so all functions use DB instead of the long global
+local DB
+
 local function InitializeSavedVariables()
     if not ExtendedRaidFrameSettings_DB then
         ExtendedRaidFrameSettings_DB = {}
@@ -28,9 +31,10 @@ local function InitializeSavedVariables()
             ExtendedRaidFrameSettings_DB[k] = v
         end
     end
+    DB = ExtendedRaidFrameSettings_DB
 end
 
-local function UpdateClampInsets()
+local function UpdateClampInsets(growth)
     if InCombatLockdown() then
         ERFS.refreshQueued = true
         return
@@ -39,14 +43,15 @@ local function UpdateClampInsets()
     local container = CompactRaidFrameContainer
     local width = container:GetWidth()
 
-    if ExtendedRaidFrameSettings_DB.growth == "left" then
+    if growth == "left" then
         container:SetClampRectInsets(width, 0, 10, 0)
     else
         container:SetClampRectInsets(0, -width, 10, 0)
     end
 end
 
-local function MirrorFrameX(frame, containerWidth)
+-- sets a frame's X anchor to its left-growth position within containerWidth
+local function SetFrameLeftGrowth(frame, containerWidth)
     local numPoints = frame:GetNumPoints()
     if numPoints == 0 then return end
 
@@ -58,13 +63,14 @@ local function MirrorFrameX(frame, containerWidth)
     end
 end
 
-local function ApplyRaidMirror()
-    UpdateClampInsets()
-    if ExtendedRaidFrameSettings_DB.growth == "right" then return end
+-- called after Layout() has reset frames to natural positions
+local function ApplyRaidGrowth(growth)
+    UpdateClampInsets(growth)
     if InCombatLockdown() then
         ERFS.refreshQueued = true
         return
     end
+    if growth ~= "left" then return end
 
     local container = CompactRaidFrameContainer
     local W = container:GetWidth()
@@ -72,59 +78,53 @@ local function ApplyRaidMirror()
     for i = 1, #container.flowFrames do
         local frame = container.flowFrames[i]
         if type(frame) == "table" and frame.GetPoint and frame:IsShown() then
-            MirrorFrameX(frame, W)
+            SetFrameLeftGrowth(frame, W)
         end
     end
 end
 
-local function ApplyPartyMirror()
-    if ExtendedRaidFrameSettings_DB.growth == "right" then return end
+-- called after Layout() has reset frames to natural positions
+local function ApplyPartyGrowth(growth)
     if InCombatLockdown() then
         ERFS.refreshQueued = true
         return
     end
+    if growth ~= "left" then return end
 
     local container = PartyFrame
     local W = container:GetWidth()
 
     for memberFrame in container.PartyMemberFramePool:EnumerateActive() do
         if memberFrame:IsShown() then
-            MirrorFrameX(memberFrame, W)
+            SetFrameLeftGrowth(memberFrame, W)
         end
     end
 end
 
-local function ReverseRaidLayout()
+local function OnRaidLayout()
     if ERFS.raidLayoutPending then return end
     ERFS.raidLayoutPending = true
     C_Timer.After(0, function()
         if not ERFS.raidLayoutPending then return end
         ERFS.raidLayoutPending = false
-        ApplyRaidMirror()
+        ApplyRaidGrowth(DB.growth)
     end)
 end
 
-local function ReversePartyLayout()
+local function OnPartyLayout()
     if ERFS.partyLayoutPending then return end
     ERFS.partyLayoutPending = true
     C_Timer.After(0, function()
         if not ERFS.partyLayoutPending then return end
         ERFS.partyLayoutPending = false
-        ApplyPartyMirror()
+        ApplyPartyGrowth(DB.growth)
     end)
 end
 
-local function ReverseAllLayouts()
-    ERFS.raidLayoutPending = false
-    ERFS.partyLayoutPending = false
-    ApplyRaidMirror()
-    ApplyPartyMirror()
-end
-
 local function OnGrowthSelected(_, value)
-    if value == ExtendedRaidFrameSettings_DB.growth then return end
+    if value == DB.growth then return end
 
-    ExtendedRaidFrameSettings_DB.growth = value
+    DB.growth = value
     LibUIDropDownMenu:UIDropDownMenu_SetText(
         ExtendedRaidFrameSettingsDialog.Settings.GrowthDropdown.Dropdown,
         GROWTH_LABELS[value]
@@ -135,7 +135,8 @@ local function OnGrowthSelected(_, value)
         return
     end
 
-    ReverseAllLayouts()
+    CompactRaidFrameContainer:Layout()
+    PartyFrame:Layout()
 end
 
 local function BuildGrowthDropdown()
@@ -146,7 +147,7 @@ local function BuildGrowthDropdown()
     for _, value in ipairs(GROWTH_OPTIONS) do
         info.text = GROWTH_LABELS[value]
         info.arg1 = value
-        info.checked = (value == ExtendedRaidFrameSettings_DB.growth)
+        info.checked = (value == DB.growth)
         LibUIDropDownMenu:UIDropDownMenu_AddButton(info)
     end
 end
@@ -164,7 +165,7 @@ local function InitializeDropdown()
     LibUIDropDownMenu:UIDropDownMenu_JustifyText(frame.Dropdown, "LEFT", 32)
     LibUIDropDownMenu:UIDropDownMenu_SetText(
         frame.Dropdown,
-        GROWTH_LABELS[ExtendedRaidFrameSettings_DB.growth]
+        GROWTH_LABELS[DB.growth]
     )
 end
 
@@ -183,7 +184,8 @@ end
 local function OnCombatEnd()
     if ERFS.refreshQueued and not InCombatLockdown() then
         ERFS.refreshQueued = false
-        ReverseAllLayouts()
+        CompactRaidFrameContainer:Layout()
+        PartyFrame:Layout()
     end
 end
 
@@ -206,12 +208,15 @@ eventFrame:SetScript("OnEvent", function(self, event)
         self:UnregisterEvent(event)
 
         InitializeSavedVariables()
-        UpdateClampInsets()
         InitializeDropdown()
 
         hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", OnEditModeSelectionChanged)
-        hooksecurefunc(CompactRaidFrameContainer, "Layout", ReverseRaidLayout)
-        hooksecurefunc(PartyFrame, "Layout", ReversePartyLayout)
+        hooksecurefunc(CompactRaidFrameContainer, "Layout", OnRaidLayout)
+        hooksecurefunc(PartyFrame, "Layout", OnPartyLayout)
+
+        -- frames are in natural state at login; apply growth direction once
+        ApplyRaidGrowth(DB.growth)
+        ApplyPartyGrowth(DB.growth)
 
         self:RegisterEvent("PLAYER_REGEN_ENABLED")
     else
