@@ -40,9 +40,9 @@ local function UpdateClampInsets()
     local width = container:GetWidth()
 
     if ExtendedRaidFrameSettings_DB.growth == "left" then
-        container:SetClampRectInsets(width - 200, 0, 10, 0)
+        container:SetClampRectInsets(width, 0, 10, 0)
     else
-        container:SetClampRectInsets(0, 200 - width, 10, 0)
+        container:SetClampRectInsets(0, -width, 10, 0)
     end
 end
 
