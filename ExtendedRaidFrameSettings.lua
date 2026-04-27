@@ -57,10 +57,14 @@ local function SetFrameLeftGrowth(frame, containerWidth)
     end
 end
 
--- called after Layout() has reset frames to natural positions
 local function ApplyRaidGrowth(growth)
     UpdateClampInsets(growth)
-    if growth ~= "left" then return end
+    if growth ~= "left" then
+        ERFS.raidLayoutPending = true
+        CompactRaidFrameContainer:Layout()
+        ERFS.raidLayoutPending = false
+        return
+    end
 
     local container = CompactRaidFrameContainer
     local W = container:GetWidth()
@@ -73,9 +77,13 @@ local function ApplyRaidGrowth(growth)
     end
 end
 
--- called after Layout() has reset frames to natural positions
 local function ApplyPartyGrowth(growth)
-    if growth ~= "left" then return end
+    if growth ~= "left" then
+        ERFS.partyLayoutPending = true
+        PartyFrame:Layout()
+        ERFS.partyLayoutPending = false
+        return
+    end
 
     local container = PartyFrame
     local W = container:GetWidth()
@@ -110,6 +118,7 @@ local function OnPartyLayout()
 end
 
 local function OnGrowthSelected(_, value)
+    if InCombatLockdown() then return end
     if value == DB.growth then return end
 
     DB.growth = value
@@ -117,8 +126,6 @@ local function OnGrowthSelected(_, value)
         ExtendedRaidFrameSettingsDialog.Settings.GrowthDropdown.Dropdown,
         GROWTH_LABELS[value]
     )
-
-    if InCombatLockdown() then return end
 
     CompactRaidFrameContainer:Layout()
     PartyFrame:Layout()
@@ -166,23 +173,6 @@ local function OnEditModeSelectionChanged(self)
     end
 end
 
-local function OnCombatEnd()
-    CompactRaidFrameContainer:Layout()
-    PartyFrame:Layout()
-end
-
-EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
-    if CompactRaidFrameContainer.alwaysUseTopLeftAnchor ~= nil then
-        CompactRaidFrameContainer.alwaysUseTopLeftAnchor = false
-    end
-end)
-
-EventUtil.ContinueOnAddOnLoaded("Blizzard_UnitFrame", function()
-    if PartyFrame.alwaysUseTopLeftAnchor ~= nil then
-        PartyFrame.alwaysUseTopLeftAnchor = false
-    end
-end)
-
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 eventFrame:SetScript("OnEvent", function(self, event)
@@ -199,9 +189,5 @@ eventFrame:SetScript("OnEvent", function(self, event)
         -- frames are in natural state at login; apply growth direction once
         ApplyRaidGrowth(DB.growth)
         ApplyPartyGrowth(DB.growth)
-
-        self:RegisterEvent("PLAYER_REGEN_ENABLED")
-    else
-        OnCombatEnd()
     end
 end)

@@ -14,6 +14,10 @@ ExtendedRaidFrameSettings is a World of Warcraft retail addon (Interface 120005 
 - Protected (secure) frames cannot be modified in combat (`InCombatLockdown()` returns true). Always guard frame mutations with a combat check or defer via `PLAYER_REGEN_ENABLED`.
 - Taint: calling protected Blizzard functions from addon code can "taint" execution and block secure actions. Minimize taint by hooking rather than replacing Blizzard functions.
 
+## WoW UI Source Reference
+
+Blizzard's UI source is cloned at `~/Projects/Local/wow-ui-source/`. Use it to look up Blizzard frame implementations, templates, and API signatures before hooking or extending anything.
+
 ## Key WoW API Surfaces
 
 The addon operates in the Edit Mode system. Important globals and APIs:
