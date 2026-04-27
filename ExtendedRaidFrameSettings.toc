@@ -1,11 +1,9 @@
 ## Interface: 120005
-## Title: Extended Raid Frame Settings
-## Notes: Adds Growth Direction setting to the EditMode dialog for raid frames
+## Title: ExtendedRaidFrameSettings
+## Notes: Reverses raid frame display order (toggle in EditMode).
 ## Author: Daniel Jirausch
 ## Version: 1.0.0
-## SavedVariables: ExtendedRaidFrameSettings_DB
+## SavedVariables: ERFSConfig
 
-LibStub/LibStub.lua
-LibUIDropDownMenu/LibUIDropDownMenu.xml
 ExtendedRaidFrameSettings.xml
 ExtendedRaidFrameSettings.lua

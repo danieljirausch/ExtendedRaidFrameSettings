@@ -1,71 +1,52 @@
-local function reverseGroupsIfNeeded(self)
-    if ExtendedRaidFrameSettings_DB.growth ~= "right" then return end
-    if self:GetGroupMode() ~= "discrete" then return end
+ERFSConfig = ERFSConfig or {}
+if ERFSConfig.reverseOrder == nil then ERFSConfig.reverseOrder = false end
 
-    local lo, hi
-    for i, v in ipairs(self.flowFrames) do
-        if type(v) == "table" and v.isFlowGroup then
-            if not lo then lo = i end
-            hi = i
-        end
-    end
-    if not lo or lo == hi then return end
-
-    while lo < hi do
-        self.flowFrames[lo],     self.flowFrames[hi]     = self.flowFrames[hi],     self.flowFrames[lo]
-        self.flowFrameTypes[lo], self.flowFrameTypes[hi] = self.flowFrameTypes[hi], self.flowFrameTypes[lo]
-        lo, hi = lo + 1, hi - 1
-    end
-    FlowContainer_DoLayout(self)
-end
-
-local function setupDropdown(LibDD, dialog)
-    local dropdown = LibDD:Create_UIDropDownMenu("ERFSDropdown", dialog)
-    dropdown:SetPoint("TOP", dialog.Label, "BOTTOM", 0, 2)
-    LibDD:UIDropDownMenu_SetWidth(dropdown, 110)
-
-    LibDD:UIDropDownMenu_Initialize(dropdown, function(self, level)
-        local current = ExtendedRaidFrameSettings_DB.growth
-        for _, value in ipairs({"left", "right"}) do
-            local label = value:sub(1, 1):upper() .. value:sub(2)
-            local info  = LibDD:UIDropDownMenu_CreateInfo()
-            info.text    = label
-            info.value   = value
-            info.checked = (current == value)
-            info.func    = function()
-                ExtendedRaidFrameSettings_DB.growth = value
-                LibDD:UIDropDownMenu_SetText(dropdown, label)
-                CompactRaidFrameContainer:TryUpdate()
+EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
+    local origAddGroups = CompactRaidFrameContainerMixin.AddGroups
+    local reversedGroups = {}
+    function CompactRaidFrameContainerMixin:AddGroups()
+        if not ERFSConfig.reverseOrder then return origAddGroups(self) end
+        RaidUtil_GetUsedGroups(reversedGroups)
+        for groupNum = MAX_RAID_GROUPS, 1, -1 do
+            if reversedGroups[groupNum] and self.groupFilterFunc(groupNum) then
+                self:AddGroup(groupNum)
             end
-            LibDD:UIDropDownMenu_AddButton(info, level)
         end
-    end)
+        FlowContainer_DoLayout(self)
+    end
 
-    LibDD:UIDropDownMenu_SetText(dropdown,
-        ExtendedRaidFrameSettings_DB.growth == "right" and "Right" or "Left")
-end
-
-local function hookDialogVisibility(dialog)
-    hooksecurefunc(EditModeSystemSettingsDialog, "UpdateSettings", function(self)
-        local system = self.attachedToSystem
-        if system and system.systemNameString == HUD_EDIT_MODE_RAID_FRAMES_LABEL then
-            dialog:Show()
-        else
-            dialog:Hide()
-        end
-    end)
-end
+    local origSetFlowSortFunction = CompactRaidFrameContainerMixin.SetFlowSortFunction
+    function CompactRaidFrameContainerMixin:SetFlowSortFunction(sortFunc)
+        origSetFlowSortFunction(self, function(t1, t2)
+            if ERFSConfig.reverseOrder then return sortFunc(t2, t1) end
+            return sortFunc(t1, t2)
+        end)
+    end
+end)
 
 EventUtil.ContinueOnAddOnLoaded("Blizzard_EditMode", function()
-    ExtendedRaidFrameSettings_DB = ExtendedRaidFrameSettings_DB or {}
-    ExtendedRaidFrameSettings_DB.growth = ExtendedRaidFrameSettings_DB.growth or "right"
+    local checkbox = ERFSReverseOrderSetting
 
-    local LibDD = LibStub:GetLibrary("LibUIDropDownMenu-4.0")
-    local dialog = ExtendedRaidFrameSettingsDialog
+    checkbox.Button:SetScript("OnClick", function(btn)
+        ERFSConfig.reverseOrder = btn:GetChecked()
+        CompactRaidFrameContainer:TryUpdate()
+    end)
 
-    setupDropdown(LibDD, dialog)
-    hookDialogVisibility(dialog)
-    hooksecurefunc(CompactRaidFrameContainerMixin, "LayoutFrames", reverseGroupsIfNeeded)
+    hooksecurefunc(EditModeSystemSettingsDialogMixin, "UpdateSettings", function(self)
+        local isRaid = self.attachedToSystem
+            and self.attachedToSystem.system == Enum.EditModeSystem.UnitFrame
+            and self.attachedToSystem.systemIndex == Enum.EditModeUnitFrameSystemIndices.Raid
 
-    CompactRaidFrameContainer:TryUpdate()
+        if not isRaid then
+            checkbox:Hide()
+            return
+        end
+
+        checkbox:SetParent(self.Settings)
+        checkbox:SetPoint("TOPLEFT")
+        checkbox.layoutIndex = 1000
+        checkbox.Button:SetChecked(ERFSConfig.reverseOrder)
+        checkbox:Show()
+        self.Settings:Layout()
+    end)
 end)

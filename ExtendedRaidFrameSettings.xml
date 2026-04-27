@@ -1,15 +1,22 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
-    <Frame name="ExtendedRaidFrameSettingsDialog" parent="EditModeSystemSettingsDialog" inherits="TranslucentFrameTemplate" frameStrata="DIALOG" frameLevel="200" hidden="true">
-        <Size x="300" y="72"/>
-        <Anchors>
-            <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT"/>
-            <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT"/>
-        </Anchors>
+    <Frame name="ERFSReverseOrderSetting" parent="UIParent" hidden="true">
+        <Size x="1" y="32"/>
+        <Frames>
+            <CheckButton parentKey="Button" inherits="UICheckButtonTemplate">
+                <Size x="26" y="26"/>
+                <Anchors>
+                    <Anchor point="LEFT" x="-5"/>
+                </Anchors>
+            </CheckButton>
+        </Frames>
         <Layers>
-            <Layer level="OVERLAY">
-                <FontString parentKey="Label" inherits="GameFontNormal" text="Growth Direction">
+            <Layer level="ARTWORK">
+                <FontString parentKey="Label" inherits="GameFontHighlightMedium"
+                            text="Reverse Order" justifyH="LEFT">
+                    <Size x="300" y="32"/>
                     <Anchors>
-                        <Anchor point="TOP" y="-12"/>
+                        <Anchor point="LEFT" relativeKey="$parent.Button"
+                                relativePoint="RIGHT" x="5"/>
                     </Anchors>
                 </FontString>
             </Layer>
