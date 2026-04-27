@@ -12,7 +12,6 @@ mkdir -p "$DEST"
 
 cp "$SCRIPT_DIR/${ADDON_NAME}.toc" "$DEST/"
 cp "$SCRIPT_DIR/${ADDON_NAME}.lua" "$DEST/"
-cp "$SCRIPT_DIR/${ADDON_NAME}.xml" "$DEST/"
 cp -r "$SCRIPT_DIR/LibStub" "$DEST/"
 cp -r "$SCRIPT_DIR/LibUIDropDownMenu" "$DEST/"
 

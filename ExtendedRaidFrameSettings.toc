@@ -1,12 +1,11 @@
 ## Interface: 120005
-## Title: ExtendedRaidFrameSettings
-## Notes: Extended settings for the default raid frames.
+## Title: Extended Raid Frame Settings
+## Notes: Adds Growth Direction setting to the EditMode dialog for raid frames
 ## Author: Daniel Jirausch
 ## Version: 1.0.0
 ## SavedVariables: ExtendedRaidFrameSettings_DB
 
 LibStub/LibStub.lua
 LibUIDropDownMenu/LibUIDropDownMenu.xml
-
 ExtendedRaidFrameSettings.xml
 ExtendedRaidFrameSettings.lua
