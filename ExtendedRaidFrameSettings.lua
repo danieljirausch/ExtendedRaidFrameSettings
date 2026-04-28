@@ -24,12 +24,15 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
         frame.healthBar:SetStatusBarColor(r, g, b)
     end)
 
-    -- UNIT_AURA doesn't trigger UpdateHealthColor normally, so re-trigger per frame
+    -- UNIT_AURA doesn't trigger UpdateHealthColor normally, so handle it directly
+    -- (calling CompactUnitFrame_UpdateHealthColor from addon context causes taint)
     hooksecurefunc("CompactUnitFrame_RegisterEvents", function(frame)
         frame:HookScript("OnEvent", function(self, event, arg1)
             if event ~= "UNIT_AURA" then return end
-            if arg1 == self.unit or arg1 == self.displayedUnit then
-                CompactUnitFrame_UpdateHealthColor(self)
+            if arg1 ~= self.unit and arg1 ~= self.displayedUnit then return end
+            if not self.unit then return end
+            if UnitHasBuff(self.unit, SPELL_ID) then
+                self.healthBar:SetStatusBarColor(r, g, b)
             end
         end)
     end)
