@@ -24,16 +24,26 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
         frame.healthBar:SetStatusBarColor(r, g, b)
     end)
 
-    -- UNIT_AURA doesn't trigger UpdateHealthColor normally, so handle it directly
-    -- (calling CompactUnitFrame_UpdateHealthColor from addon context causes taint)
+    -- HookScript on Blizzard frames taints their entire script chain, causing
+    -- CompactUnitFrame_UpdateHealthColor to run tainted (GetStatusBarColor returns
+    -- secret values that can't be compared). Use a dedicated listener instead.
+    local trackedFrames = setmetatable({}, {__mode = "k"})
+
     hooksecurefunc("CompactUnitFrame_RegisterEvents", function(frame)
-        frame:HookScript("OnEvent", function(self, event, arg1)
-            if event ~= "UNIT_AURA" then return end
-            if arg1 ~= self.unit and arg1 ~= self.displayedUnit then return end
-            if not self.unit then return end
-            if UnitHasBuff(self.unit, SPELL_ID) then
-                self.healthBar:SetStatusBarColor(r, g, b)
+        trackedFrames[frame] = true
+    end)
+
+    local unitAuraListener = CreateFrame("Frame")
+    unitAuraListener:RegisterEvent("UNIT_AURA")
+    unitAuraListener:SetScript("OnEvent", function(self, event, unit)
+        for frame in pairs(trackedFrames) do
+            if frame.unit == unit or frame.displayedUnit == unit then
+                if frame.unit and UnitHasBuff(frame.unit, SPELL_ID) then
+                    frame.healthBar:SetStatusBarColor(r, g, b)
+                else
+                    frame.healthDirty = true
+                end
             end
-        end)
+        end
     end)
 end)
