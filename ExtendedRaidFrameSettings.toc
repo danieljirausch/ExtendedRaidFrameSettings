@@ -1,0 +1,6 @@
+## Interface: 120005
+## Title: ExtendedRaidFrameSettings
+## Version: 0.1.0
+## Notes: Colors raid frame health bars when a tracked buff is active
+
+ExtendedRaidFrameSettings.lua
