@@ -11,7 +11,6 @@ DEST="${STAGE_DIR}/${ADDON_NAME}"
 mkdir -p "$DEST"
 
 cp "$SCRIPT_DIR/${ADDON_NAME}.toc" "$DEST/"
-cp "$SCRIPT_DIR/${ADDON_NAME}.xml" "$DEST/"
 cp "$SCRIPT_DIR/${ADDON_NAME}.lua" "$DEST/"
 
 (cd "$STAGE_DIR" && zip -r "${SCRIPT_DIR}/${OUT}" "$ADDON_NAME")
