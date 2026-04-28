@@ -41,7 +41,7 @@ EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
                 if frame.unit and UnitHasBuff(frame.unit, SPELL_ID) then
                     frame.healthBar:SetStatusBarColor(r, g, b)
                 else
-                    frame.healthDirty = true
+                    CompactUnitFrame_SetHealthDirty(frame)
                 end
             end
         end
