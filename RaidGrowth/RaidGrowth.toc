@@ -1,0 +1,6 @@
+## Interface: 120005
+## Title: Raid Growth
+## Notes: Controls raid frame growth direction (default or reverse).
+## Version: 1.0.0
+## SavedVariables: RaidGrowthDB
+RaidGrowth.lua
