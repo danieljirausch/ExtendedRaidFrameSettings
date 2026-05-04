@@ -1,49 +1,59 @@
--- Spell ID and hex color to highlight when the buff is active on a raid member
 local SPELL_ID = 119611  -- Renewing Mist (HoT)
 local HEX_COLOR = "16a34a"
 
+local active = {} -- [auraInstanceID] = true if it's our Renewing Mist
 local r = tonumber(HEX_COLOR:sub(1, 2), 16) / 255
 local g = tonumber(HEX_COLOR:sub(3, 4), 16) / 255
 local b = tonumber(HEX_COLOR:sub(5, 6), 16) / 255
 
-local function UnitHasBuff(unit, spellID)
-    local i = 1
-    while true do
-        local aura = C_UnitAuras.GetBuffDataByIndex(unit, i)
-        if not aura then break end
-        if aura.spellId == spellID then return true end
-        i = i + 1
-    end
-    return false
+
+--     -- GAIN
+--     if updateInfo.addedAuraInstanceIDs then
+--         for _, id in ipairs(updateInfo.addedAuraInstanceIDs) do
+--             local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unit, id)
+--             if aura and aura.spellId == SPELL_ID and aura.sourceUnit == "player" then
+--                 active[id] = true
+--                 print(unit .. " gained Renewing Mist")
+--             end
+--         end
+--     end
+
+--     -- FADE
+--     if updateInfo.removedAuraInstanceIDs then
+--         for _, id in ipairs(updateInfo.removedAuraInstanceIDs) do
+--             if active[id] then
+--                 active[id] = nil
+--                 print(unit .. " lost Renewing Mist")
+--             end
+--         end
+--     end
+-- end)
+
+local function OnEvent(self, event, unit, info)
+    if not info then return end
+
+	if info.isFullUpdate then
+		print("full update") -- loop over all auras, etc
+		return
+	end
+
+	if info.addedAuras then
+		local text = {}
+		for _, aura in pairs(info.addedAuras) do
+			tinsert(text, format("%d(%s)", aura.auraInstanceID, aura.name))
+		end
+		print(unit, "|cnGREEN_FONT_COLOR:added|r", table.concat(text, ", "))
+	end
+
+	if info.removedAuraInstanceIDs then
+		local text = {}
+		for _, aura in pairs(info.removedAuraInstanceIDs) do
+			tinsert(text, aura)
+		end
+		print(unit, "|cnRED_FONT_COLOR:removed|r", table.concat(text, ", "))
+	end
 end
 
-EventUtil.ContinueOnAddOnLoaded("Blizzard_CompactRaidFrames", function()
-    hooksecurefunc("CompactUnitFrame_UpdateHealthColor", function(frame)
-        if not frame.unit then return end
-        if not UnitHasBuff(frame.unit, SPELL_ID) then return end
-        frame.healthBar:SetStatusBarColor(r, g, b)
-    end)
-
-    -- HookScript on Blizzard frames taints their entire script chain, causing
-    -- CompactUnitFrame_UpdateHealthColor to run tainted (GetStatusBarColor returns
-    -- secret values that can't be compared). Use a dedicated listener instead.
-    local trackedFrames = setmetatable({}, {__mode = "k"})
-
-    hooksecurefunc("CompactUnitFrame_RegisterEvents", function(frame)
-        trackedFrames[frame] = true
-    end)
-
-    local unitAuraListener = CreateFrame("Frame")
-    unitAuraListener:RegisterEvent("UNIT_AURA")
-    unitAuraListener:SetScript("OnEvent", function(self, event, unit)
-        for frame in pairs(trackedFrames) do
-            if frame.unit == unit or frame.displayedUnit == unit then
-                if frame.unit and UnitHasBuff(frame.unit, SPELL_ID) then
-                    frame.healthBar:SetStatusBarColor(r, g, b)
-                else
-                    CompactUnitFrame_SetHealthDirty(frame)
-                end
-            end
-        end
-    end)
-end)
+local f = CreateFrame("Frame")
+f:RegisterEvent("UNIT_AURA")
+f:SetScript("OnEvent", OnEvent)
